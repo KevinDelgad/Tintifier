@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+
+<script>
+  // $(document).on('submit',null, null,function (e) {
+  //     alert('Save Successful');
+  //     //prevent the form from doing a submit
+  //     e.preventDefault();
+  //     return false;
+  // });
+
+  // Runs when an image is selected
+  function previewImage(input) {
+    // Update the img to show the selected image
+    const reader = new FileReader();
+    console.log("HELLO!");
+    reader.onload = function (e) {
+      console.log("Loaded!");
+      const img = document.getElementById("preview");
+      img.src = e.target.result;
+    };
+  }
+</script>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="style.css">
+    <title>ImageTinter</title>
+  </head>
+
+
+  <!-- Pop Up start -->
+<body>
+  <div id="modal" class="modal"> 
+    <div class="modal-content">
+      <button class="close">&times;</button>
+      <img src="https://tr.rbxcdn.com/258d4a94ae32abc3d24ada0b5d55cfaf/420/420/Hat/Png" alt="Product Image" style="width: 100%; max-width: 300px;"> <!-- Add the image here -->
+      <p>NEW UGC OUT! CHECK IT OUT. NOW. </p>
+      <a href="https://www.roblox.com/catalog?Category=1&CreatorName=Doodle%20World%20Studios&salesTypeFilter=1" target="_blank" class="modal-button">OK! FINE.</a>
+    </div>
+  </div>
+  <!-- Pop up end-->  
+
+
+  <body>
+    <div class="container">
+      <div class="column" id="input-column">
+        <div class="input-container">
+          <label for="input-file" class="upload-area">
+            <img
+              id="preview"
+              class="upload-icon"
+              style="cursor: pointer"
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            />
+          </label>
+          <input
+            type="file"
+            id="input-file"
+            accept="image/*"
+            onchange="previewImage(this)"
+            style="display: none"
+          />
+        </div>
+        <div class="input-container">
+          <input type="text" id="input-link" placeholder="OR enter image URL" onkeydown="if (event.keyCode === 13) { handleLinkSubmission(); }"/>
+          <button id="go-button" onclick="handleLinkSubmission()">Go</button>
+        </div>
+      </div>
+      <div class="column column-fill" id="selection-column">
+        <div id="tinted-images"></div>
+        <!-- Adds Save/Copy Button start-->
+        <button id="save-collage-button" onclick="saveCollage()">Save Collage</button>
+        <button id="copy-collage-button" onclick="copyCollage()">Copy Collage</button>
+        <!-- Adds Save/Copy Button end-->
+      </div>
+      <div class="column column-fill" id="output-column">
+        <div id="output-box">
+          <img
+            id="output-img"
+            src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+          />
+          <h2 id="color-label">Color</h2>
+        </div>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
