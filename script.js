@@ -185,6 +185,42 @@ function imgView(){
   }
 }
 
+function tempUpdate(colorGradient, img, offset){
+  canvas = document.getElementById('output-img');
+    const ctx = canvas.getContext('2d');
+    ctx.canvas.width = img.width
+    ctx.canvas.height = img.height
+    const grd1 = ctx.createLinearGradient(0, offset, 0, canvas.height + offset);
+    const grd2 = ctx.createLinearGradient(0, offset - canvas.height, 0, offset);
+
+    for (let i = 0; i < gradientPalette[colorGradient].gradient.length; i++) {
+      const rgba = gradientPalette[colorGradient].gradient[i];
+      const colorString1 = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]})`;
+
+      grd1.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
+      grd2.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
+    }
+
+    // Clear the entire canvas before drawing the new frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(img, 0, 0);
+
+    ctx.fillStyle = grd1;
+    ctx.fillRect(0, offset, canvas.width, canvas.height);
+
+    ctx.fillStyle = grd2;
+    ctx.fillRect(0, offset - canvas.height, canvas.width, canvas.height);
+
+    offset += 2;
+
+    if (offset > canvas.height) {
+      offset = 0;
+    }
+
+    requestAnimationFrame(() => tempUpdate(colorGradient, img, offset));
+}
+
 function updateGradient(colorGradient, img, firstLoad, offset){
   if(firstLoad)
   {
@@ -195,9 +231,10 @@ function updateGradient(colorGradient, img, firstLoad, offset){
       canvas.addEventListener("click", function () {
         console.log("Clicked!");
         gradientView();
+        tempUpdate(colorGradient, img, 0);
         document.getElementById("output-img");
         document.getElementById("color-label").textContent = gradientPalette[colorGradient].label
-        document.getElementById("color-label").style.color = palette[i];
+
       });
       canvasList.appendChild(canvas)
     }else{
