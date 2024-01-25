@@ -24,6 +24,7 @@ closeBtn.addEventListener('click', function() {
 
 // Pop up end //
 
+let animationFlags = [];
 
 const palette = [
   "#FF55FE",
@@ -52,47 +53,47 @@ const gradientPalette = [
   {
       label: 'Pride',
       gradient: [
-          [255, 0, 0, .5],
-          [255, 85, 0, .5],
-          [255, 255, 0, .5],
-          [0, 148, 196, .5],
-          [0, 0, 255, .5],
-          [170, 0, 255, .5]
+          [255, 0, 0, 1],
+          [255, 85, 0, 1],
+          [255, 255, 0, 1],
+          [0, 148, 196, 1],
+          [0, 0, 255, 1],
+          [170, 0, 255, 1]
       ]
   },
   {
       label: 'Easter',
       gradient: [
-          [0, 254, 170, .5],
-          [0, 225, 254, .5],
-          [251, 0, 254, .5]
+          [0, 254, 170, 1],
+          [0, 225, 254, 1],
+          [251, 0, 254, 1]
       ]
   },
   {
       label: 'Sunset',
       gradient: [
-          [252, 222, 108, .5],
-          [252, 181, 108, .5],
-          [252, 71, 59, .5]
+          [252, 222, 108, 1],
+          [252, 181, 108, 1],
+          [252, 71, 59, 1]
       ]
   },
   {
       label: 'July',
       gradient: [
-          [255, 0, 0, .5],
-          [253, 76, 71, .5],
-          [56, 95, 223, .5],
-          [0, 85, 255, .5]
+          [255, 0, 0, 1],
+          [253, 76, 71, 1],
+          [56, 95, 223, 1],
+          [0, 85, 255, 1]
       ]
   },
   {
       label: 'Roulette',
       gradient: [
-          [145, 53, 184, .5],
-          [217, 47, 109, .5],
-          [57, 147, 177, .5],
-          [89, 47, 255, .5],
-          [99, 44, 216, .5]    
+          [145, 53, 184, 1],
+          [217, 47, 109, 1],
+          [57, 147, 177, 1],
+          [89, 47, 255, 1],
+          [99, 44, 216, 1]    
       ]
   }
 ];
@@ -158,40 +159,25 @@ function tintImage(image, color) {
   return canvas.toDataURL();
 }
 
-function gradientView(){
-  const elementToRemove = document.getElementById("output-img")
+//Animation for clicked on tinted Photos
+//Same concept as static img tinting, but now with a gradient moving down with each frame
+function tempUpdate(colorGradient, img, offset, flag){
+    if(flag.isRunning){
 
-  if(elementToRemove.tagName === "IMG"){
-    elementToRemove.remove();
     const canvas = document.createElement('canvas');
-    canvas.id = "output-img"
-    const appendItem = document.getElementById("output-box")
-
-    appendItem.insertBefore(canvas, appendItem.firstChild)
-  }
-}
-
-function imgView(){
-  const elementToRemove = document.getElementById("output-img")
-
-  if(elementToRemove.tagName === "CANVAS"){
-    elementToRemove.remove();
-    const image = document.createElement('img');
-    image.id = "output-img"
-    image.source = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-    const appendItem = document.getElementById("output-box")
-
-    appendItem.insertBefore(image, appendItem.firstChild)
-  }
-}
-
-function tempUpdate(colorGradient, img, offset){
-  canvas = document.getElementById('output-img');
     const ctx = canvas.getContext('2d');
     ctx.canvas.width = img.width
     ctx.canvas.height = img.height
+
+    const imgCanvas = document.createElement('canvas');
+    const ctx2 = imgCanvas.getContext('2d');
+    ctx2.canvas.width = img.width
+    ctx2.canvas.height = img.height
+
     const grd1 = ctx.createLinearGradient(0, offset, 0, canvas.height + offset);
     const grd2 = ctx.createLinearGradient(0, offset - canvas.height, 0, offset);
+
+    const showImg = document.getElementById('output-img')
 
     for (let i = 0; i < gradientPalette[colorGradient].gradient.length; i++) {
       const rgba = gradientPalette[colorGradient].gradient[i];
@@ -204,7 +190,7 @@ function tempUpdate(colorGradient, img, offset){
     // Clear the entire canvas before drawing the new frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.drawImage(img, 0, 0);
+    //ctx.drawImage(img, 0, 0);
 
     ctx.fillStyle = grd1;
     ctx.fillRect(0, offset, canvas.width, canvas.height);
@@ -218,9 +204,36 @@ function tempUpdate(colorGradient, img, offset){
       offset = 0;
     }
 
-    requestAnimationFrame(() => tempUpdate(colorGradient, img, offset));
+    ctx2.drawImage(img, 0, 0);
+  
+
+    const imageData = ctx2.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    const gradientData = ctx.getImageData(0,0, canvas.width, canvas.height)
+    const gdata = gradientData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = gdata[i] / 255;
+      const g = gdata[i + 1] / 255;
+      const b = gdata[i + 2] / 255;
+
+      const alpha = data[i + 3] / 255;
+      data[i] *= r * alpha;
+      data[i + 1] *= g * alpha;
+      data[i + 2] *= b * alpha;
+    }
+
+    ctx2.putImageData(imageData, 0, 0)
+    showImg.src = imgCanvas.toDataURL();
+
+    requestAnimationFrame(() => tempUpdate(colorGradient, img, offset, flag));
+  }
 }
 
+/*
+
+//Animation for tinted animated photo Preview
 function updateGradient(colorGradient, img, firstLoad, offset){
   if(firstLoad)
   {
@@ -230,8 +243,6 @@ function updateGradient(colorGradient, img, firstLoad, offset){
 
       canvas.addEventListener("click", function () {
         console.log("Clicked!");
-        gradientView();
-        tempUpdate(colorGradient, img, 0);
         document.getElementById("output-img");
         document.getElementById("color-label").textContent = gradientPalette[colorGradient].label
 
@@ -275,6 +286,61 @@ function updateGradient(colorGradient, img, firstLoad, offset){
 
     requestAnimationFrame(() => updateGradient(colorGradient, img, false, offset));
 }
+*/
+
+function gradientPreviews(colorGradient, img){
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.canvas.width = img.width
+  ctx.canvas.height = img.height
+
+  const imgCanvas = document.createElement('canvas');
+  const ctx2 = imgCanvas.getContext('2d');
+  ctx2.canvas.width = img.width
+  ctx2.canvas.height = img.height
+
+  const grd1 = ctx.createLinearGradient(0, 0, 0, canvas.height);
+
+  const showImg = document.getElementById('output-img')
+
+  for (let i = 0; i < gradientPalette[colorGradient].gradient.length; i++) {
+    const rgba = gradientPalette[colorGradient].gradient[i];
+    const colorString1 = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]})`;
+
+    grd1.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
+  }
+
+  // Clear the entire canvas before drawing the new frame
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  //ctx.drawImage(img, 0, 0);
+
+  ctx.fillStyle = grd1;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+  ctx2.drawImage(img, 0, 0);
+  
+  const imageData = ctx2.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  const gradientData = ctx.getImageData(0,0, canvas.width, canvas.height)
+  const gdata = gradientData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = gdata[i] / 255;
+    const g = gdata[i + 1] / 255;
+    const b = gdata[i + 2] / 255;
+
+    const alpha = data[i + 3] / 255;
+    data[i] *= r * alpha;
+    data[i + 1] *= g * alpha;
+    data[i + 2] *= b * alpha;
+  }
+
+  ctx2.putImageData(imageData, 0, 0)
+  return imgCanvas.toDataURL();
+}
 
 function clearContainers() {
   // Clear the "tinted-images" container
@@ -307,7 +373,6 @@ function handleFileSelect(event) {
   preview.src = url;
 
   processImageEntry(url);
-  createMultipleGradients(url)
 }
 
 // Remove everything after the file extension.
@@ -353,19 +418,16 @@ function handleLinkSubmission() {
       if (response.ok) {
         preview.src = filteredLink;
         processImageEntry(filteredLink);
-        createMultipleGradients(filteredLink)
       } else {
         // If there is a CORS error, use the proxy server
         preview.src = corsProxy + filteredLink;
         processImageEntry(corsProxy + filteredLink);
-        createMultipleGradients(corsProxy + filteredLink)
       }
     })
     .catch(() => {
       // If there is an error making the request, use the proxy server
       preview.src = corsProxy + filteredLink;
       processImageEntry(corsProxy + filteredLink);
-      createMultipleGradients(corsProxy + filteredLink)
     });
 }
 
@@ -384,7 +446,7 @@ function processImageEntry(imgUrl) {
       // Make it clickable!
       imgResult.addEventListener("click", function () {
         console.log("Clicked!");
-        imgView()
+        deActivateAnimations()
         document.getElementById("output-img").src = this.src;
         document.getElementById("color-label").textContent =
           this.classList[0].replace(/-/g, " ");
@@ -396,15 +458,66 @@ function processImageEntry(imgUrl) {
       container.appendChild(imgResult);
     }
   };
+
+  createMultipleGradients(imgUrl)
 }
 
 function createMultipleGradients(imgUrl){
+  deActivateAnimations()
   const img = new Image();
   img.src = imgUrl;
   img.crossOrigin = "anonymous";
+  img.onload = function(){
     for(let i = 0; i < gradientPalette.length; i++){
-      updateGradient(i, img, true, 0)
+      const resizedImg = resizeImage(img, 350, 350);
+
+      const gradImg = gradientPreviews(i, img)
+      const gradImgResult = document.createElement("img")
+
+      gradImgResult.src = gradImg
+      gradImgResult.classList.add(gradientPalette[i].label)
+
+      gradImgResult.addEventListener("click", function () {
+        deActivateAnimations()
+        document.getElementById("output-img");
+        document.getElementById("color-label").textContent = gradientPalette[i].label
+
+        if(animationFlags.some(entry => entry.animation === gradientPalette[i].label)){
+          const flag = animationFlags.find(entry => entry.animation === gradientPalette[i].label)
+          flag.isRunning = true
+          tempUpdate(i, resizedImg, 0, flag)
+
+        }else{
+          animationFlags.push({animation: gradientPalette[i].label, isRunning : true})
+          tempUpdate(i, resizedImg, 0, animationFlags.find(entry => entry.animation === gradientPalette[i].label))
+        }
+      });
+
+      const container = document.getElementById("tinted-images");
+      container.appendChild(gradImgResult);
     }
+  };
+}
+
+//Resize image to allow for smaller and easier img processing
+function resizeImage(originalImg, width, height) {
+  if(originalImg.width > width || originalImg.height > height){
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(originalImg, 0, 0, width, height);
+    const resizedImg = new Image();
+    resizedImg.src = canvas.toDataURL("image/png");
+    return resizedImg;
+  }
+  return originalImg
+}
+
+function deActivateAnimations(){
+  for(i = 0; i < animationFlags.length; i++){
+    animationFlags[i].isRunning = false
+  }
 }
 
 // Copy/Save Collage start//
