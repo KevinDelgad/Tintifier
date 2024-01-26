@@ -433,6 +433,7 @@ function handleLinkSubmission() {
 
 function processImageEntry(imgUrl) {
   // Generate the tinted versions of the image and display them on the canvas
+  deActivateAnimations()
   const img = new Image();
   img.crossOrigin = "anonymous";
   img.src = imgUrl;
@@ -463,7 +464,6 @@ function processImageEntry(imgUrl) {
 }
 
 function createMultipleGradients(imgUrl){
-  deActivateAnimations()
   const img = new Image();
   img.src = imgUrl;
   img.crossOrigin = "anonymous";
@@ -481,6 +481,7 @@ function createMultipleGradients(imgUrl){
         deActivateAnimations()
         document.getElementById("output-img");
         document.getElementById("color-label").textContent = gradientPalette[i].label
+        colorizeText(document.getElementById("color-label"), i)
 
         if(animationFlags.some(entry => entry.animation === gradientPalette[i].label)){
           const flag = animationFlags.find(entry => entry.animation === gradientPalette[i].label)
@@ -520,6 +521,21 @@ function deActivateAnimations(){
   }
 }
 
+function colorizeText(header, gradient){
+  console.log("Ping")
+  var text = header.textContent;
+  header.innerHTML = '';
+  for(let i = 0; i < text.length; i++){
+    var span = document.createElement('span');
+    span.textContent = text[i];
+
+    var colorIndex = i % gradientPalette[gradient].gradient.length
+    var rgb = gradientPalette[gradient].gradient[colorIndex]
+    span.style.color = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+    header.appendChild(span);
+  }
+}
+
 // Copy/Save Collage start//
 
 function saveCollage() {
@@ -532,6 +548,7 @@ function saveCollage() {
   const canvas = document.createElement("canvas");
   canvas.width = singleImageWidth * collageWidth;
   canvas.height = singleImageHeight * collageHeight;
+
   const ctx = canvas.getContext("2d");
 
   for (let i = 0; i < images.length; i++) {
@@ -545,6 +562,7 @@ function saveCollage() {
   link.href = canvas.toDataURL();
   link.download = "collage.png";
   link.click();
+  console.log("click")
 }
 
 function copyCollage() {
