@@ -538,17 +538,14 @@ function createMultipleGradients(imgUrl){
 
 //Resize image to allow for smaller and easier img processing
 function resizeImage(originalImg, width, height) {
-  if(originalImg.width > width || originalImg.height > height){
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(originalImg, 0, 0, width, height);
-    const resizedImg = new Image();
-    resizedImg.src = canvas.toDataURL("image/png");
-    return resizedImg;
-  }
-  return originalImg
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(originalImg, 0, 0, width, height);
+  const resizedImg = new Image();
+  resizedImg.src = canvas.toDataURL("image/png");
+  return resizedImg;
 }
 
 function deActivateAnimations(){
