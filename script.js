@@ -159,6 +159,17 @@ function tintImage(image, color) {
   return canvas.toDataURL();
 }
 
+function calculateHalfPoint(color1, color2){
+  let halfpoint = []
+
+  for(i = 0; i < 3; i++){
+    halfpoint.push(Math.floor((color1[i] + color2[i]) / 2))
+  }
+  halfpoint.push(1)
+
+  return halfpoint
+}
+
 //Animation for clicked on tinted Photos
 //Same concept as static img tinting, but now with a gradient moving down with each frame
 function tempUpdate(colorGradient, img, offset, flag){
@@ -177,14 +188,39 @@ function tempUpdate(colorGradient, img, offset, flag){
     const grd1 = ctx.createLinearGradient(0, offset, 0, canvas.height + offset);
     const grd2 = ctx.createLinearGradient(0, offset - canvas.height, 0, offset);
 
+    const gradStop = 1
+
+    const halfpoint = calculateHalfPoint(gradientPalette[colorGradient].gradient[0], gradientPalette[colorGradient].gradient[gradientPalette[colorGradient].gradient.length - 1])
+
     const showImg = document.getElementById('output-img')
 
     for (let i = 0; i < gradientPalette[colorGradient].gradient.length; i++) {
       const rgba = gradientPalette[colorGradient].gradient[i];
       const colorString1 = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]})`;
 
-      grd1.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
-      grd2.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
+      if(i === 0){
+        let tempRgba = halfpoint;
+        let tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
+        grd1.addColorStop(0, tempColorString1);
+        grd2.addColorStop(0, tempColorString1);
+        tempRgba = gradientPalette[colorGradient].gradient[0];
+        tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
+        grd1.addColorStop((gradStop/gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
+        grd2.addColorStop((gradStop/gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
+      }else if(i === gradientPalette[colorGradient].gradient.length - 1){
+        let tempRgba = gradientPalette[colorGradient].gradient[i];
+        let tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
+        grd1.addColorStop(gradStop - (gradStop / gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
+        grd2.addColorStop(gradStop - (gradStop / gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
+        tempRgba = halfpoint;
+        tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
+        grd1.addColorStop(gradStop, tempColorString1);
+        grd2.addColorStop(gradStop, tempColorString1);
+      }
+      else{
+        grd1.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
+        grd2.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
+      }
     }
 
     // Clear the entire canvas before drawing the new frame
