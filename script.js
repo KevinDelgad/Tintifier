@@ -12,15 +12,31 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 });
 
+
 // Close popup ad when X button is clicked
-const closeBtn = document.querySelector('.close');
+const closeBtn = document.querySelector(".close");
 const modal = document.getElementById("modal");
 
-closeBtn.addEventListener('click', function() {
+const preloadImgs = (paths, type) => {
+  for (const key of Object.keys(paths)) {
+    const image = new Image();
+    image.src = paths[key];
+    image.alt = key;
+    image.crossOrigin = "anonymous";
+    if(type === "static"){
+      gradientPaletteStatic.push([key,image]);
+    }else{
+      gradientPaletteAnimated.push([key,image])
+    }
+  }
+
+  console.log(gradientPaletteStatic)
+
+};
+
+closeBtn.addEventListener("click", function () {
   modal.style.display = "none";
 });
-
-
 
 // Pop up end //
 
@@ -49,54 +65,41 @@ const palette = [
   "#242424",
 ];
 
-const gradientPalette = [
-  {
-      label: 'Pride',
-      gradient: [
-          [255, 0, 0, 1],
-          [255, 85, 0, 1],
-          [255, 255, 0, 1],
-          [0, 148, 196, 1],
-          [0, 0, 255, 1],
-          [170, 0, 255, 1]
-      ]
-  },
-  {
-      label: 'Easter',
-      gradient: [
-          [0, 254, 170, 1],
-          [0, 225, 254, 1],
-          [251, 0, 254, 1]
-      ]
-  },
-  {
-      label: 'Sunset',
-      gradient: [
-          [252, 222, 108, 1],
-          [252, 181, 108, 1],
-          [252, 71, 59, 1]
-      ]
-  },
-  {
-      label: 'July',
-      gradient: [
-          [255, 0, 0, 1],
-          [253, 76, 71, 1],
-          [56, 95, 223, 1],
-          [0, 85, 255, 1]
-      ]
-  },
-  {
-      label: 'Roulette',
-      gradient: [
-          [145, 53, 184, 1],
-          [217, 47, 109, 1],
-          [57, 147, 177, 1],
-          [89, 47, 255, 1],
-          [99, 44, 216, 1]    
-      ]
+const gradientPaletteAnimated = [];
+const gradientPaletteStatic = [];
+
+const fetchData = async (url) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
   }
-];
+};
+
+fetchData("staticGradientPaths.json").then(
+  data =>{
+    preloadImgs(data, "static")
+  }
+)
+
+fetchData("animatedGradientPaths.json").then(
+  data =>{
+    preloadImgs(data, "animated")
+  }
+)
+
+
+const gradPaths = {
+  Easter: "Gradients/EasterTintGradient.webp",
+  Pride: "Gradients/PrideTintGradient.webp",
+  Jolly: "Gradients/Jolly_Tint_Gradient.webp",
+  Roulette: "Gradients/RouletteTintGradient.webp",
+  Sunset: "Gradients/SunsetTintGradient.webp"
+};
 
 const paletteNames = [
   "Pink",
@@ -131,7 +134,7 @@ function tintImage(image, color) {
   const ctx = canvas.getContext("2d");
 
   ctx.drawImage(image, 0, 0);
-     
+
   // convert hex color string to RGB object
   const hexToRgb = (hex) => ({
     r: parseInt(hex.substring(1, 3), 16),
@@ -159,94 +162,63 @@ function tintImage(image, color) {
   return canvas.toDataURL();
 }
 
-function calculateHalfPoint(color1, color2){
-  let halfpoint = []
+function calculateHalfPoint(color1, color2) {
+  let halfpoint = [];
 
-  for(i = 0; i < 3; i++){
-    halfpoint.push(Math.floor((color1[i] + color2[i]) / 2))
+  for (i = 0; i < 3; i++) {
+    halfpoint.push(Math.floor((color1[i] + color2[i]) / 2));
   }
-  halfpoint.push(1)
+  halfpoint.push(1);
 
-  return halfpoint
+  return halfpoint;
 }
 
 //Animation for clicked on tinted Photos
 //Same concept as static img tinting, but now with a gradient moving down with each frame
-function tempUpdate(colorGradient, img, offset, flag){
-    if(flag.isRunning){
+function tempUpdate(colorGradient, img, offset, flag) {
+  if (flag.isRunning) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.canvas.width = img.width;
+    ctx.canvas.height = img.height;
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.canvas.width = img.width
-    ctx.canvas.height = img.height
+    const imgCanvas = document.createElement("canvas");
+    const ctx2 = imgCanvas.getContext("2d");
+    ctx2.canvas.width = img.width;
+    ctx2.canvas.height = img.height;
 
-    const imgCanvas = document.createElement('canvas');
-    const ctx2 = imgCanvas.getContext('2d');
-    ctx2.canvas.width = img.width
-    ctx2.canvas.height = img.height
+    const flippedImgCanvas = document.createElement("canvas")
+    const ctx3 = flippedImgCanvas.getContext("2d");
+    ctx3.canvas.width = img.width;
+    ctx3.canvas.height = img.height;
 
-    const grd1 = ctx.createLinearGradient(0, offset, 0, canvas.height + offset);
-    const grd2 = ctx.createLinearGradient(0, offset - canvas.height, 0, offset);
+    ctx3.scale(1, -1)
+    ctx3.drawImage(colorGradient, 0, -ctx3.canvas.height, img.width, img.height)
 
-    const gradStop = 1
 
-    const halfpoint = calculateHalfPoint(gradientPalette[colorGradient].gradient[0], gradientPalette[colorGradient].gradient[gradientPalette[colorGradient].gradient.length - 1])
-
-    const showImg = document.getElementById('output-img')
-
-    for (let i = 0; i < gradientPalette[colorGradient].gradient.length; i++) {
-      const rgba = gradientPalette[colorGradient].gradient[i];
-      const colorString1 = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]})`;
-
-      if(i === 0){
-        let tempRgba = halfpoint;
-        let tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
-        grd1.addColorStop(0, tempColorString1);
-        grd2.addColorStop(0, tempColorString1);
-        tempRgba = gradientPalette[colorGradient].gradient[0];
-        tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
-        grd1.addColorStop((gradStop/gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
-        grd2.addColorStop((gradStop/gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
-      }else if(i === gradientPalette[colorGradient].gradient.length - 1){
-        let tempRgba = gradientPalette[colorGradient].gradient[i];
-        let tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
-        grd1.addColorStop(gradStop - (gradStop / gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
-        grd2.addColorStop(gradStop - (gradStop / gradientPalette[colorGradient].gradient.length) / 2, tempColorString1);
-        tempRgba = halfpoint;
-        tempColorString1 = `rgba(${tempRgba[0]}, ${tempRgba[1]}, ${tempRgba[2]}, ${tempRgba[3]})`;
-        grd1.addColorStop(gradStop, tempColorString1);
-        grd2.addColorStop(gradStop, tempColorString1);
-      }
-      else{
-        grd1.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
-        grd2.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
-      }
-    }
+    const showImg = document.getElementById("output-img");
 
     // Clear the entire canvas before drawing the new frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     //ctx.drawImage(img, 0, 0);
 
-    ctx.fillStyle = grd1;
-    ctx.fillRect(0, offset, canvas.width, canvas.height);
-
-    ctx.fillStyle = grd2;
-    ctx.fillRect(0, offset - canvas.height, canvas.width, canvas.height);
+    ctx.drawImage(colorGradient, 0, offset, img.width, img.height);
+    ctx.drawImage(flippedImgCanvas, 0, offset - canvas.height, img.width, img.height);
+    ctx.drawImage(colorGradient, 0, offset - canvas.height*2, img.width, img.height);
 
     offset += 2;
 
-    if (offset > canvas.height) {
+    if (offset > canvas.height*2) {
       offset = 0;
     }
 
     ctx2.drawImage(img, 0, 0);
-  
 
     const imageData = ctx2.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    const gradientData = ctx.getImageData(0,0, canvas.width, canvas.height)
+    const gradientData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const gdata = gradientData.data;
 
     for (let i = 0; i < data.length; i += 4) {
@@ -260,7 +232,7 @@ function tempUpdate(colorGradient, img, offset, flag){
       data[i + 2] *= b * alpha;
     }
 
-    ctx2.putImageData(imageData, 0, 0)
+    ctx2.putImageData(imageData, 0, 0);
     showImg.src = imgCanvas.toDataURL();
 
     requestAnimationFrame(() => tempUpdate(colorGradient, img, offset, flag));
@@ -324,43 +296,24 @@ function updateGradient(colorGradient, img, firstLoad, offset){
 }
 */
 
-function gradientPreviews(colorGradient, img){
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.canvas.width = img.width
-  ctx.canvas.height = img.height
+function gradientPreviewsAnimated(colorGradient, img) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.canvas.width = img.width;
+  ctx.canvas.height = img.height;
+  ctx.drawImage(colorGradient, 0, 0, img.width, img.height);
 
-  const imgCanvas = document.createElement('canvas');
-  const ctx2 = imgCanvas.getContext('2d');
-  ctx2.canvas.width = img.width
-  ctx2.canvas.height = img.height
-
-  const grd1 = ctx.createLinearGradient(0, 0, 0, canvas.height);
-
-  const showImg = document.getElementById('output-img')
-
-  for (let i = 0; i < gradientPalette[colorGradient].gradient.length; i++) {
-    const rgba = gradientPalette[colorGradient].gradient[i];
-    const colorString1 = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]})`;
-
-    grd1.addColorStop(i / gradientPalette[colorGradient].gradient.length, colorString1);
-  }
-
-  // Clear the entire canvas before drawing the new frame
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  //ctx.drawImage(img, 0, 0);
-
-  ctx.fillStyle = grd1;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+  const imgCanvas = document.createElement("canvas");
+  const ctx2 = imgCanvas.getContext("2d");
+  ctx2.canvas.width = img.width;
+  ctx2.canvas.height = img.height;
 
   ctx2.drawImage(img, 0, 0);
-  
+
   const imageData = ctx2.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  const gradientData = ctx.getImageData(0,0, canvas.width, canvas.height)
+  const gradientData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const gdata = gradientData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -374,8 +327,48 @@ function gradientPreviews(colorGradient, img){
     data[i + 2] *= b * alpha;
   }
 
-  ctx2.putImageData(imageData, 0, 0)
+  ctx2.putImageData(imageData, 0, 0);
   return imgCanvas.toDataURL();
+}
+
+function tintGradientStatic(img, gradImg){
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.canvas.width = img.width;
+  ctx.canvas.height = img.height;
+
+  const imgCanvas = document.createElement("canvas");
+  const ctx2 = imgCanvas.getContext("2d");
+  ctx2.canvas.width = img.width;
+  ctx2.canvas.height = img.height;
+
+
+  const showImg = document.getElementById("output-img");
+
+
+  ctx.drawImage(gradImg, 0, 0, img.width, img.height);
+
+  ctx2.drawImage(img, 0, 0);
+
+  const imageData = ctx2.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  const gradientData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const gdata = gradientData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = gdata[i] / 255;
+    const g = gdata[i + 1] / 255;
+    const b = gdata[i + 2] / 255;
+
+    const alpha = data[i + 3] / 255;
+    data[i] *= r * alpha;
+    data[i + 1] *= g * alpha;
+    data[i + 2] *= b * alpha;
+  }
+
+  ctx2.putImageData(imageData, 0, 0);
+  showImg.src = imgCanvas.toDataURL();
 }
 
 function clearContainers() {
@@ -392,8 +385,6 @@ function clearContainers() {
   const colorLabel = document.getElementById("color-label");
   colorLabel.textContent = "Color";
 }
-
-
 
 function handleFileSelect(event) {
   console.log("go script.js!!");
@@ -440,7 +431,6 @@ function handleLinkSubmission() {
   const corsProxy = "https://api.allorigins.win/raw?url=";
   var inputLink = document.getElementById("input-link").value;
   var filteredLink = linkFilter(inputLink);
-  console.log({ filteredLink });
 
   clearContainers();
 
@@ -450,7 +440,6 @@ function handleLinkSubmission() {
   fetch(filteredLink, { mode: "cors" })
     .then((response) => {
       // If the response status is ok, set the preview source directly
-      console.log({response});
       if (response.ok) {
         preview.src = filteredLink;
         processImageEntry(filteredLink);
@@ -469,7 +458,7 @@ function handleLinkSubmission() {
 
 function processImageEntry(imgUrl) {
   // Generate the tinted versions of the image and display them on the canvas
-  deActivateAnimations()
+  deActivateAnimations();
   const img = new Image();
   img.crossOrigin = "anonymous";
   img.src = imgUrl;
@@ -482,12 +471,11 @@ function processImageEntry(imgUrl) {
 
       // Make it clickable!
       imgResult.addEventListener("click", function () {
-        console.log("Clicked!");
-        deActivateAnimations()
+        deActivateAnimations();
         document.getElementById("output-img").src = this.src;
         document.getElementById("color-label").textContent =
           this.classList[0].replace(/-/g, " ");
-          document.getElementById("color-label").style.color = palette[i];
+        document.getElementById("color-label").style.color = palette[i];
       });
 
       // Append the <img> elements to a container element
@@ -496,37 +484,84 @@ function processImageEntry(imgUrl) {
     }
   };
 
-  createMultipleGradients(imgUrl)
+  createMultipleGradientsAnimated(imgUrl);
+  createMultiplGradientsStatic(imgUrl);
 }
 
-function createMultipleGradients(imgUrl){
+function createMultiplGradientsStatic(imgUrl){
   const img = new Image();
   img.src = imgUrl;
   img.crossOrigin = "anonymous";
-  img.onload = function(){
-    for(let i = 0; i < gradientPalette.length; i++){
+  img.onload = function () {
+    for (let i = 0; i < gradientPaletteStatic.length; i++) {
+      console.log(gradientPaletteStatic.length)
+      const dataUrlResult = tintGradientStatic(img, palette[i]);
+      const imgResult = document.createElement("img");
+      imgResult.src = dataUrlResult;
+      imgResult.classList.add(paletteNames[i]);
+
+      // Make it clickable!
+      imgResult.addEventListener("click", function () {
+        deActivateAnimations();
+        document.getElementById("output-img").src = this.src;
+        document.getElementById("color-label").textContent =
+          this.classList[0].replace(/-/g, " ");
+        document.getElementById("color-label").style.color = palette[i];
+      });
+
+      // Append the <img> elements to a container element
+      const container = document.getElementById("tinted-images");
+      container.appendChild(imgResult);
+    }
+  }
+}
+
+function createMultipleGradientsAnimated(imgUrl) {
+  const img = new Image();
+  img.src = imgUrl;
+  img.crossOrigin = "anonymous";
+
+  img.onload = function () {
+    for (let i = 0; i < gradientPaletteAnimated.length; i++) {
       const resizedImg = resizeImage(img, 350, 350);
+      const gradientImg = gradientPaletteAnimated[i][1];
 
-      const gradImg = gradientPreviews(i, img)
-      const gradImgResult = document.createElement("img")
+      const gradImg = gradientPreviewsAnimated(gradientImg, img);
+      const gradImgResult = document.createElement("img");
 
-      gradImgResult.src = gradImg
-      gradImgResult.classList.add(gradientPalette[i].label)
+      gradImgResult.src = gradImg;
+      gradImgResult.classList.add(gradientPaletteAnimated[i][0]);
 
       gradImgResult.addEventListener("click", function () {
-        deActivateAnimations()
+        deActivateAnimations();
         document.getElementById("output-img");
-        document.getElementById("color-label").textContent = gradientPalette[i].label
-        colorizeText(document.getElementById("color-label"), i)
+        document.getElementById("color-label").textContent =
+        gradientPaletteAnimated[i][0];
+        colorizeText(document.getElementById("color-label"), i);
 
-        if(animationFlags.some(entry => entry.animation === gradientPalette[i].label)){
-          const flag = animationFlags.find(entry => entry.animation === gradientPalette[i].label)
-          flag.isRunning = true
-          tempUpdate(i, resizedImg, 0, flag)
-
-        }else{
-          animationFlags.push({animation: gradientPalette[i].label, isRunning : true})
-          tempUpdate(i, resizedImg, 0, animationFlags.find(entry => entry.animation === gradientPalette[i].label))
+        if (
+          animationFlags.some(
+            (entry) => entry.animation === gradientPaletteAnimated[i][0]
+          )
+        ) {
+          const flag = animationFlags.find(
+            (entry) => entry.animation === gradientPaletteAnimated[i][0]
+          );
+          flag.isRunning = true;
+          tempUpdate(gradientImg, resizedImg, 0, flag);
+        } else {
+          animationFlags.push({
+            animation: gradientPaletteAnimated[i][0],
+            isRunning: true,
+          });
+          tempUpdate(
+            gradientImg,
+            resizedImg,
+            0,
+            animationFlags.find(
+              (entry) => entry.animation === gradientPaletteAnimated[i][0]
+            )
+          );
         }
       });
 
@@ -548,32 +583,22 @@ function resizeImage(originalImg, width, height) {
   return resizedImg;
 }
 
-function deActivateAnimations(){
-  for(i = 0; i < animationFlags.length; i++){
-    animationFlags[i].isRunning = false
+function deActivateAnimations() {
+  for (i = 0; i < animationFlags.length; i++) {
+    animationFlags[i].isRunning = false;
   }
 }
 
-function colorizeText(header, gradient){
-  console.log("Ping")
-  var text = header.textContent;
-  header.innerHTML = '';
-  for(let i = 0; i < text.length; i++){
-    var span = document.createElement('span');
-    span.textContent = text[i];
-
-    var colorIndex = i % gradientPalette[gradient].gradient.length
-    var rgb = gradientPalette[gradient].gradient[colorIndex]
-    span.style.color = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
-    header.appendChild(span);
-  }
+function colorizeText(header, gradient) {
+  console.log("Ping");
+  //Fix HERE!
 }
 
 // Copy/Save Collage start//
 
 function saveCollage() {
   const images = document.querySelectorAll("#tinted-images img");
-  const collageWidth = 4; 
+  const collageWidth = 4;
   const collageHeight = Math.ceil(images.length / collageWidth);
   const singleImageWidth = images[0].naturalWidth;
   const singleImageHeight = images[0].naturalHeight;
@@ -595,39 +620,38 @@ function saveCollage() {
   link.href = canvas.toDataURL();
   link.download = "collage.png";
   link.click();
-  console.log("click")
 }
 
 function copyCollage() {
-    const images = document.querySelectorAll("#tinted-images img");
-    const collageWidth = 4;
-    const collageHeight = Math.ceil(images.length / collageWidth);
-    const singleImageWidth = images[0].naturalWidth;
-    const singleImageHeight = images[0].naturalHeight;
+  const images = document.querySelectorAll("#tinted-images img");
+  const collageWidth = 4;
+  const collageHeight = Math.ceil(images.length / collageWidth);
+  const singleImageWidth = images[0].naturalWidth;
+  const singleImageHeight = images[0].naturalHeight;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = singleImageWidth * collageWidth;
-    canvas.height = singleImageHeight * collageHeight;
-    const ctx = canvas.getContext("2d");
+  const canvas = document.createElement("canvas");
+  canvas.width = singleImageWidth * collageWidth;
+  canvas.height = singleImageHeight * collageHeight;
+  const ctx = canvas.getContext("2d");
 
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i];
-      const x = (i % collageWidth) * singleImageWidth;
-      const y = Math.floor(i / collageWidth) * singleImageHeight;
-      ctx.drawImage(img, x, y, singleImageWidth, singleImageHeight);
-    }
-
-    canvas.toBlob(function (blob) {
-      const item = new ClipboardItem({ "image/png": blob });
-      navigator.clipboard.write([item]).then(
-        function () {
-          alert("Collage copied to clipboard!");
-        },
-        function (err) {
-          console.error("Failed to copy collage: ", err);
-        }
-      );
-    });
+  for (let i = 0; i < images.length; i++) {
+    const img = images[i];
+    const x = (i % collageWidth) * singleImageWidth;
+    const y = Math.floor(i / collageWidth) * singleImageHeight;
+    ctx.drawImage(img, x, y, singleImageWidth, singleImageHeight);
   }
-  
-  //end//
+
+  canvas.toBlob(function (blob) {
+    const item = new ClipboardItem({ "image/png": blob });
+    navigator.clipboard.write([item]).then(
+      function () {
+        alert("Collage copied to clipboard!");
+      },
+      function (err) {
+        console.error("Failed to copy collage: ", err);
+      }
+    );
+  });
+}
+
+//end//
