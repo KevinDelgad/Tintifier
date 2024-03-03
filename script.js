@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 });
 
-
 // Close popup ad when X button is clicked
 const closeBtn = document.querySelector(".close");
 const modal = document.getElementById("modal");
@@ -23,15 +22,12 @@ const preloadImgs = (paths, type) => {
     image.src = paths[key];
     image.alt = key;
     image.crossOrigin = "anonymous";
-    if(type === "static"){
-      gradientPaletteStatic.push([key,image]);
-    }else{
-      gradientPaletteAnimated.push([key,image])
+    if (type === "static") {
+      gradientPaletteStatic.push([key, image]);
+    } else {
+      gradientPaletteAnimated.push([key, image]);
     }
   }
-
-  console.log(gradientPaletteStatic)
-
 };
 
 closeBtn.addEventListener("click", function () {
@@ -80,25 +76,20 @@ const fetchData = async (url) => {
   }
 };
 
-fetchData("staticGradientPaths.json").then(
-  data =>{
-    preloadImgs(data, "static")
-  }
-)
+fetchData("staticGradientPaths.json").then((data) => {
+  preloadImgs(data, "static");
+});
 
-fetchData("animatedGradientPaths.json").then(
-  data =>{
-    preloadImgs(data, "animated")
-  }
-)
-
+fetchData("animatedGradientPaths.json").then((data) => {
+  preloadImgs(data, "animated");
+});
 
 const gradPaths = {
   Easter: "Gradients/EasterTintGradient.webp",
   Pride: "Gradients/PrideTintGradient.webp",
   Jolly: "Gradients/Jolly_Tint_Gradient.webp",
   Roulette: "Gradients/RouletteTintGradient.webp",
-  Sunset: "Gradients/SunsetTintGradient.webp"
+  Sunset: "Gradients/SunsetTintGradient.webp",
 };
 
 const paletteNames = [
@@ -187,14 +178,19 @@ function tempUpdate(colorGradient, img, offset, flag) {
     ctx2.canvas.width = img.width;
     ctx2.canvas.height = img.height;
 
-    const flippedImgCanvas = document.createElement("canvas")
+    const flippedImgCanvas = document.createElement("canvas");
     const ctx3 = flippedImgCanvas.getContext("2d");
     ctx3.canvas.width = img.width;
     ctx3.canvas.height = img.height;
 
-    ctx3.scale(1, -1)
-    ctx3.drawImage(colorGradient, 0, -ctx3.canvas.height, img.width, img.height)
-
+    ctx3.scale(1, -1);
+    ctx3.drawImage(
+      colorGradient,
+      0,
+      -ctx3.canvas.height,
+      img.width,
+      img.height
+    );
 
     const showImg = document.getElementById("output-img");
 
@@ -204,12 +200,24 @@ function tempUpdate(colorGradient, img, offset, flag) {
     //ctx.drawImage(img, 0, 0);
 
     ctx.drawImage(colorGradient, 0, offset, img.width, img.height);
-    ctx.drawImage(flippedImgCanvas, 0, offset - canvas.height, img.width, img.height);
-    ctx.drawImage(colorGradient, 0, offset - canvas.height*2, img.width, img.height);
+    ctx.drawImage(
+      flippedImgCanvas,
+      0,
+      offset - canvas.height,
+      img.width,
+      img.height
+    );
+    ctx.drawImage(
+      colorGradient,
+      0,
+      offset - canvas.height * 2,
+      img.width,
+      img.height
+    );
 
     offset += 2;
 
-    if (offset > canvas.height*2) {
+    if (offset > canvas.height * 2) {
       offset = 0;
     }
 
@@ -331,7 +339,7 @@ function gradientPreviewsAnimated(colorGradient, img) {
   return imgCanvas.toDataURL();
 }
 
-function tintGradientStatic(img, gradImg){
+function tintGradientStatic(gradImg, img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   ctx.canvas.width = img.width;
@@ -342,13 +350,8 @@ function tintGradientStatic(img, gradImg){
   ctx2.canvas.width = img.width;
   ctx2.canvas.height = img.height;
 
-
-  const showImg = document.getElementById("output-img");
-
-
+  ctx2.drawImage(img, 0, 0, img.width, img.height);
   ctx.drawImage(gradImg, 0, 0, img.width, img.height);
-
-  ctx2.drawImage(img, 0, 0);
 
   const imageData = ctx2.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
@@ -366,9 +369,8 @@ function tintGradientStatic(img, gradImg){
     data[i + 1] *= g * alpha;
     data[i + 2] *= b * alpha;
   }
-
   ctx2.putImageData(imageData, 0, 0);
-  showImg.src = imgCanvas.toDataURL();
+  return imgCanvas.toDataURL();
 }
 
 function clearContainers() {
@@ -488,17 +490,20 @@ function processImageEntry(imgUrl) {
   createMultiplGradientsStatic(imgUrl);
 }
 
-function createMultiplGradientsStatic(imgUrl){
+function createMultiplGradientsStatic(imgUrl) {
   const img = new Image();
   img.src = imgUrl;
   img.crossOrigin = "anonymous";
   img.onload = function () {
     for (let i = 0; i < gradientPaletteStatic.length; i++) {
-      console.log(gradientPaletteStatic.length)
-      const dataUrlResult = tintGradientStatic(img, palette[i]);
+      console.log(gradientPaletteStatic.length);
+      const staticImg = gradientPaletteStatic[i][1];
+      const dataUrlResult = tintGradientStatic(staticImg, img);
+
       const imgResult = document.createElement("img");
       imgResult.src = dataUrlResult;
-      imgResult.classList.add(paletteNames[i]);
+
+      imgResult.classList.add(gradientPaletteStatic[i][0]);
 
       // Make it clickable!
       imgResult.addEventListener("click", function () {
@@ -506,14 +511,14 @@ function createMultiplGradientsStatic(imgUrl){
         document.getElementById("output-img").src = this.src;
         document.getElementById("color-label").textContent =
           this.classList[0].replace(/-/g, " ");
-        document.getElementById("color-label").style.color = palette[i];
+        colorizeText(document.getElementById("color-label"), staticImg)
       });
 
       // Append the <img> elements to a container element
       const container = document.getElementById("tinted-images");
       container.appendChild(imgResult);
     }
-  }
+  };
 }
 
 function createMultipleGradientsAnimated(imgUrl) {
@@ -536,8 +541,8 @@ function createMultipleGradientsAnimated(imgUrl) {
         deActivateAnimations();
         document.getElementById("output-img");
         document.getElementById("color-label").textContent =
-        gradientPaletteAnimated[i][0];
-        colorizeText(document.getElementById("color-label"), i);
+          gradientPaletteAnimated[i][0];
+        colorizeText(document.getElementById("color-label"), gradientPaletteAnimated[i][1]);
 
         if (
           animationFlags.some(
@@ -590,8 +595,46 @@ function deActivateAnimations() {
 }
 
 function colorizeText(header, gradient) {
-  console.log("Ping");
-  //Fix HERE!
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.canvas.width = gradient.width;
+  ctx.canvas.height = gradient.height;
+  ctx.drawImage(gradient, 0, 0, gradient.width, gradient.height)
+  const width = canvas.width;
+  const height = canvas.height;
+  
+  const interval = Math.floor(Math.max(width, height) / header.textContent.length);
+
+  const rgbData = []
+
+  for(let i = 0; i < header.textContent.length; i++){
+    const xPos = Math.floor(i * interval);
+    const yPos = Math.floor(i * interval / width) * width + Math.min(i * interval % width, width - 1);
+
+    // Get the image data at the specific point
+    const imageData = ctx.getImageData(xPos, yPos, 1, 1).data;
+
+    // Extract and store the RGB values
+    rgbData.push({
+      r: imageData[0],
+      g: imageData[1],
+      b: imageData[2],
+    });
+  }
+  
+  var text = header.textContent;
+  header.innerHTML = '';
+
+  console.log(rgbData)
+
+
+  for(let i = 0; i < text.length; i++){
+    var span = document.createElement('span');
+    span.textContent = text[i];
+    var rgb = rgbData[i]
+    span.style.color = 'rgb(' + rgb["r"] + ',' + rgb["g"] + ',' + rgb["b"] + ')';
+    header.appendChild(span);
+  }
 }
 
 // Copy/Save Collage start//
